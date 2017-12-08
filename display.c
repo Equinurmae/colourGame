@@ -115,7 +115,7 @@ void displayText(display *d, char *string, SDL_Color color) {
 }
 
 void end(display *d) {
-    SDL_Delay(5000);
+    SDL_Delay(2000);
     TTF_CloseFont(d->font);
     TTF_Quit();
     SDL_Quit();

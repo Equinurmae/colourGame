@@ -1,4 +1,4 @@
-//the sketch assignment
+//colour match game
 #include <stdio.h>
 #include <stdlib.h>
 #include <stdbool.h>
@@ -24,10 +24,20 @@ const SDL_Color GREY = {158, 158, 158};
 struct state {
     display *d;
     int score, speed;
-    bool lost;
+    bool lost, clicked;
 };
 
 typedef struct state state;
+
+//checks to see if the file can be opened
+FILE *fopenCheck(char *file, char *mode) {
+  FILE *p = fopen(file, mode);
+  if (p != NULL) return p;
+  fprintf(stderr, "Can't open %s: ", file);
+  fflush(stderr);
+  perror("");
+  exit(1);
+}
 
 void instruction(display *d, char *string, SDL_Color color) {
     displayText(d, string, color);
@@ -59,6 +69,8 @@ SDL_Color randColour(int r) {
         return BROWN;
       case (10):
         return GREY;
+      default:
+        return BLACK;
     }
 }
 
@@ -86,6 +98,8 @@ char *randName(int r) {
         return "BROWN";
       case (10):
         return "GREY";
+      default:
+        return "BLACK";
     }
 }
 
@@ -94,7 +108,12 @@ void listen(state *g, int r, int s) {
     while(SDL_PollEvent(&event)){
       switch(event.type){
         case SDL_KEYDOWN:
-          if (r == s) g->score++;
+          if (r == s ) {
+            if (!g->clicked) {
+              g->score++;
+              g->clicked = true;
+            }
+          }
           else g->lost = true;
           break;
         case SDL_QUIT:
@@ -104,14 +123,17 @@ void listen(state *g, int r, int s) {
     }
 }
 
-
+void difficulty(state *g) {
+    if((g->score % 5) == 0 && g->speed > 150) g->speed -= 50;
+}
 
 void makeColour(state *g) {
-
+    difficulty(g);
+    g->clicked = false;
     int r = rand() % 11;
     int s = rand() % 11;
     int again = rand() % 100;
-    if (again < 30) s = r;
+    if (again < 35) s = r;
     displayText(g->d, randName(r), randColour(s));
     SDL_Delay(g->speed);
     listen(g, r, s);
@@ -128,21 +150,50 @@ void game(state *g){
     }
 }
 
+state *init() {
+    state *g = malloc(sizeof(state));
+    display *d = newDisplay("MATCH THE COLOURS", 1280, 960);
+    g->d = d;
+    g->score = 0;
+    g->speed = 1000;
+    g->lost = false;
+    g->clicked = false;
+    return g;
+}
+
+bool fileExists(char *filename) {
+    bool exists;
+    FILE *f = fopen(filename, "r");
+    if (f == NULL) exists = false;
+    else exists = true;
+    fclose(f);
+    return exists;
+}
+
 void start() {
-  state *g = malloc(sizeof(state));
-  display *d = newDisplay("CANVAS", 1280, 960);
-  g->d = d;
-  g->score = 0;
-  g->speed = 700;
-  g->lost = false;
-  instruction(g->d, "MATCH THE COLOURS!\nPress any key.", BLACK);
-  instruction(g->d, "A series of colour names in different colours will appear on screen. \n\nIf they match, press any key to score a point.", BLACK);
-  instruction(g->d, "Be careful! \n\nIf you press incorrectly, the game is over!", BLACK);
-  game(g);
-  char *endString = malloc(100*sizeof(char));
-  sprintf(endString, "Oh no! You lost!\n\nYour final score: %d", g->score);
-  displayText(g->d, endString, BLACK);
-  end(g->d);
+    FILE *highscore;
+    if (fileExists("highscore.txt")) highscore = fopen("highscore.txt", "r");
+    else highscore = fopen("highscore.txt", "w");
+    char line[100];
+    fgets(line, 100, highscore);
+    int high = (strcmp(line, "") == 0) ? 0 : atoi(line);
+    printf("%d\n",atoi(line));
+    fclose(highscore);
+    state *g = init();
+    instruction(g->d, "MATCH THE COLOURS!\nPress any key.", BLACK);
+    instruction(g->d, "A series of colour names in different colours will appear on screen. \n\nIf they match, press any key to score a point.", BLACK);
+    instruction(g->d, "Be careful! \n\nIf you press incorrectly, the game is over!", BLACK);
+    game(g);
+    char *endString = malloc(100*sizeof(char));
+    if (g->score > high) {
+      FILE *overwrite = fopen("highscore.txt", "w");
+      fprintf(overwrite, "%d", g->score);
+      fclose(overwrite);
+      high = g->score;
+    }
+    sprintf(endString, "Oh no! You lost!\n\nYour final score: %d\n\nHighscore: %d", g->score, high);
+    displayText(g->d, endString, BLACK);
+    end(g->d);
 }
 
 int main(int n, char *args[n]) {
