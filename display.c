@@ -34,6 +34,7 @@ display *newDisplay(char *title, int width, int height) {
     d->height = height;
     notNeg(SDL_Init(SDL_INIT_VIDEO));
     TTF_Init();
+    d->font = TTF_OpenFont("arial.ttf", 100);
     int x = SDL_WINDOWPOS_UNDEFINED, y = SDL_WINDOWPOS_UNDEFINED;
     d->window = notNull(SDL_CreateWindow(title, x, y, width, height, 0));
     SDL_Surface *surface = notNull(SDL_GetWindowSurface(d->window));
@@ -83,7 +84,6 @@ char key(display *d) {
 }
 
 void displayScore(display *d, char *string, SDL_Color color) {
-    d->font = TTF_OpenFont("arial.ttf", 50);
     SDL_Surface * surface = TTF_RenderText_Blended_Wrapped(d->font, string, color, 1280);
     SDL_Texture * texture = SDL_CreateTextureFromSurface(d->renderer, surface);
     int texW = 0;
@@ -100,7 +100,6 @@ void displayScore(display *d, char *string, SDL_Color color) {
 void displayText(display *d, char *string, SDL_Color color) {
     int winW = 0, winH = 0;
     SDL_GetWindowSize(d->window, &winW, &winH);
-    d->font = TTF_OpenFont("arial.ttf", 100);
     SDL_Surface * surface = TTF_RenderText_Blended_Wrapped(d->font, string, color, winW);
     SDL_Texture * texture = SDL_CreateTextureFromSurface(d->renderer, surface);
     int texW = 0;
@@ -115,7 +114,7 @@ void displayText(display *d, char *string, SDL_Color color) {
 }
 
 void end(display *d) {
-    SDL_Delay(2000);
+    SDL_Delay(5000);
     TTF_CloseFont(d->font);
     TTF_Quit();
     SDL_Quit();
